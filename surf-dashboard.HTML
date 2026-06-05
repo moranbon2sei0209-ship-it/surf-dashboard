@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国府の浜 Surf Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+      background: linear-gradient(180deg, #0b4f6c, #01baef);
+      color: white;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      opacity: 0.85;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 20px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .data-row:last-child {
+      border-bottom: none;
+    }
+
+    .recommend {
+      font-size: 28px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .stars {
+      font-size: 26px;
+      color: #ffe66d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏄 国府の浜 Surf Dashboard</h1>
+    <div class="subtitle">龍ちゃん専用・朝イチ波チェックボード 🌊</div>
+<div class="card">
+  <h2>現在時刻</h2>
+  <div id="clock" style="font-size:28px;font-weight:bold;">
+    読み込み中...
+  </div>
+</div>
+
+<div class="card">
+  <h2>現在</h2>
+　<div class="data-row"><span>データ時刻</span><span id="now-time"></span></div>
+  <div class="data-row"><span>波高</span><span id="now-wave">読み込み中...</span></div>
+  <div class="data-row"><span>周期</span><span id="now-period">読み込み中...</span></div>
+  <div class="data-row"><span>波向き</span><span id="now-direction">読み込み中...</span></div>
+　<div class="data-row"><span>風</span><span id="now-wind">読み込み中...</span></div>
+</div>
+
+<div class="card">
+  <h2>明日の朝 6時</h2>
+  <div class="data-row"><span>波高</span><span id="tomorrow-wave">読み込み中...</span></div>
+  <div class="data-row"><span>周期</span><span id="tomorrow-period">読み込み中...</span></div>
+  <div class="data-row"><span>波向き</span><span id="tomorrow-direction">読み込み中...</span></div>
+　<div class="data-row"><span>風</span><span id="tomorrow-wind">読み込み中...</span></div>
+</div>
+    <div class="card">
+  <h2>おすすめ</h2>
+  <div id="recommend-board" class="recommend">読み込み中...</div>
+  <p id="recommend-comment">読み込み中...</p>
+  <div id="recommend-stars" class="stars">☆☆☆☆☆</div>
+</div>
+
+<script>
+function updateClock() {
+  const now = new Date();
+
+  const date = now.toLocaleDateString('ja-JP');
+  const time = now.toLocaleTimeString('ja-JP');
+
+  document.getElementById('clock').innerHTML =
+    date + "<br>" + time;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+async function fetchSurfData() {
+  const marineUrl =
+    "https://marine-api.open-meteo.com/v1/marine" +
+    "?latitude=34.33&longitude=136.87" +
+    "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction" +
+    "&timezone=Asia%2FTokyo" +
+    "&forecast_days=2";
+
+  const windUrl =
+    "https://api.open-meteo.com/v1/forecast" +
+    "?latitude=34.33&longitude=136.87" +
+    "&hourly=wind_speed_10m,wind_direction_10m" +
+    "&timezone=Asia%2FTokyo" +
+    "&forecast_days=2";
+
+  const marineRes = await fetch(marineUrl);
+  const marineData = await marineRes.json();
+
+  const windRes = await fetch(windUrl);
+  const windData = await windRes.json();
+
+  const h = marineData.hourly;
+  const w = windData.hourly;
+
+  const now = new Date();
+
+  let bestIndex = 0;
+  let bestDiff = Infinity;
+
+  h.time.forEach((t, i) => {
+    const diff = Math.abs(new Date(t) - now);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIndex = i;
+    }
+  });
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(6, 0, 0, 0);
+
+  let morningIndex = 0;
+  let morningDiff = Infinity;
+
+  h.time.forEach((t, i) => {
+    const diff = Math.abs(new Date(t) - tomorrow);
+    if (diff < morningDiff) {
+      morningDiff = diff;
+      morningIndex = i;
+    }
+  });
+
+　document.getElementById("now-time").textContent =
+  h.time[bestIndex];
+
+  document.getElementById("now-wave").textContent =
+    h.wave_height[bestIndex] + "m";
+  document.getElementById("now-period").textContent =
+    h.wave_period[bestIndex] + "秒";
+  document.getElementById("now-direction").textContent =
+  h.wave_direction[bestIndex] + "° / " +
+  directionToText(h.wave_direction[bestIndex]);
+
+  document.getElementById("tomorrow-wave").textContent =
+    h.wave_height[morningIndex] + "m";
+  document.getElementById("tomorrow-period").textContent =
+    h.wave_period[morningIndex] + "秒";
+  document.getElementById("tomorrow-direction").textContent =
+  h.wave_direction[morningIndex] + "° / " +
+  directionToText(h.wave_direction[morningIndex]);
+
+  document.getElementById("now-wind").textContent =
+  w.wind_speed_10m[bestIndex] + "km/h / " +
+  w.wind_direction_10m[bestIndex] + "° / " +
+  directionToText(w.wind_direction_10m[bestIndex]);
+
+  document.getElementById("tomorrow-wind").textContent =
+  w.wind_speed_10m[morningIndex] + "km/h / " +
+  w.wind_direction_10m[morningIndex] + "° / " +
+  directionToText(w.wind_direction_10m[morningIndex]);
+
+const rec = getRecommendation(
+  h.wave_height[morningIndex],
+  h.wave_period[morningIndex],
+  w.wind_speed_10m[morningIndex]
+);
+
+document.getElementById("recommend-board").textContent = rec.board;
+document.getElementById("recommend-comment").textContent = rec.comment;
+document.getElementById("recommend-stars").textContent = rec.stars;
+
+}
+
+function directionToText(deg) {
+  const dirs = [
+    "北",
+    "北東",
+    "東",
+    "南東",
+    "南",
+    "南西",
+    "西",
+    "北西"
+  ];
+
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function getRecommendation(wave, period, windKmh) {
+  let board = "🏄 UTOPIA";
+  let comment = "横見て立つべし。リラックスして走るにゃ。";
+  let stars = 3;
+
+  if (wave < 0.7) {
+    board = "🥚 Retro Egg";
+    comment = "小波メロー予報。たくさん乗って感覚練習にゃ。";
+    stars = 2;
+  }
+
+  if (wave >= 0.7 && wave < 1.3 && period >= 9 && windKmh < 20) {
+    board = "🏄 UTOPIA";
+    comment = "ロングライド期待。横見てパワーゾーンを探すにゃ。";
+    stars = 5;
+  }
+
+  if (wave >= 1.3 && windKmh < 20) {
+    board = "⚡ BV2 or UTOPIA";
+    comment = "サイズあり。現地で掘れ具合とゲットを確認にゃ。";
+    stars = 4;
+  }
+
+  if (windKmh >= 20) {
+    comment = "風強め。面ザワ注意。無理せず現地判断にゃ。";
+    stars = Math.max(1, stars - 1);
+  }
+
+  return {
+    board,
+    comment,
+    stars: "★".repeat(stars) + "☆".repeat(5 - stars)
+  };
+}
+
+fetchSurfData();
+
+</script>
+</body>
+</html>
