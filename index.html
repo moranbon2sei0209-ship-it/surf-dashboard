@@ -202,6 +202,67 @@
     .warn { background: rgba(252,211,77,0.25); color: var(--warn); }
     .bad { background: rgba(252,165,165,0.25); color: var(--bad); }
 
+
+    .tide-card {
+      margin-bottom: 14px;
+    }
+
+    .tide-layout {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .tide-day {
+      background: rgba(0,0,0,0.10);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .tide-day h3 {
+      margin: 0 0 10px;
+      font-size: 17px;
+    }
+
+    .moon-line {
+      color: var(--accent);
+      font-weight: 900;
+      margin: 6px 0 10px;
+    }
+
+    .tide-links {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .tide-link {
+      display: block;
+      text-decoration: none;
+      color: white;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 14px;
+      padding: 11px 12px;
+      font-weight: 900;
+    }
+
+    .tide-link small {
+      display: block;
+      color: var(--muted);
+      font-weight: 700;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .tide-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-top: 10px;
+    }
+
     .footer {
       color: var(--muted);
       font-size: 13px;
@@ -214,6 +275,7 @@
       .header { display: block; }
       .clock { text-align: left; margin-top: 12px; }
       .grid { grid-template-columns: 1fr; }
+      .tide-layout { grid-template-columns: 1fr; }
       .card { border-radius: 18px; padding: 16px; }
     }
   </style>
@@ -256,6 +318,45 @@
       </div>
     </div>
 
+    <div class="card tide-card">
+      <h2>潮汐・月齢</h2>
+      <div class="subtitle">満潮・干潮は外部サイトで確認。手入力なしで、必要な時だけ開く方式にゃ。</div>
+      <div class="tide-layout">
+        <div class="tide-day">
+          <h3 id="tide-today-title">今日</h3>
+          <div id="moon-today" class="moon-line">月齢 読み込み中...</div>
+          <div class="tide-links">
+            <a class="tide-link" href="https://tenki.jp/wave/5/27/151/" target="_blank" rel="noopener noreferrer">
+              🌊 tenki.jp 国府の浜
+              <small>満潮・干潮、潮位、月齢、日の出日の入をまとめて確認</small>
+            </a>
+            <a class="tide-link" href="https://usio.surf/home/tide/8/20/221/" target="_blank" rel="noopener noreferrer">
+              🏄 USIO 伊勢 国府ノ浜メイン
+              <small>サーファー向けの潮まわり確認用</small>
+            </a>
+          </div>
+        </div>
+
+        <div class="tide-day">
+          <h3 id="tide-tomorrow-title">明日</h3>
+          <div id="moon-tomorrow" class="moon-line">月齢 読み込み中...</div>
+          <div class="tide-links">
+            <a class="tide-link" href="https://www.umitenki.jp/tenki/2458/tide" target="_blank" rel="noopener noreferrer">
+              🌅 海天気 国府白浜
+              <small>タイドグラフ表示で潮の流れを確認</small>
+            </a>
+            <a class="tide-link" href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/suisan.php?stn=TB" target="_blank" rel="noopener noreferrer">
+              📊 気象庁 鳥羽 潮位表
+              <small>公式の潮位表。広域の基準確認用</small>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="tide-note">
+        ※潮汐リンクは外部サイトを開くにゃ。国府の浜ピンポイントは tenki.jp / USIO / 海天気、公式基準は気象庁・鳥羽を目安にする構成。
+      </div>
+    </div>
+
     <div class="card table-card">
       <div class="table-header">
         <h2>7日間の波・風・天気</h2>
@@ -281,6 +382,7 @@
 
     <div class="footer">
       データ元：Open-Meteo Marine / Forecast API。数値は予報モデルなので、最後はライブカメラと現地判断にゃ。<br>
+      潮汐は外部リンクで確認。月齢はJavaScriptによる概算にゃ。<br>
       24時はその日の終わり、つまり翌日0時のデータとして表示しているにゃ。
     </div>
   </div>
@@ -433,6 +535,132 @@
       `;
     }
 
+
+    function formatDateInputKey(dateObj) {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getMoonAge(dateObj) {
+      const knownNewMoon = new Date('2000-01-06T18:14:00+09:00');
+      const synodicMonth = 29.530588853;
+      const days = (dateObj - knownNewMoon) / 86400000;
+      const age = ((days % synodicMonth) + synodicMonth) % synodicMonth;
+      return age;
+    }
+
+    function moonAgeToName(age) {
+      if (age < 1.0) return '新月';
+      if (age < 6.5) return '三日月〜上弦前';
+      if (age < 8.5) return '上弦の月';
+      if (age < 13.5) return '満月前';
+      if (age < 16.5) return '満月';
+      if (age < 21.5) return '下弦前';
+      if (age < 23.5) return '下弦の月';
+      return '新月前';
+    }
+
+    function updateMoonDisplay() {
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const todayAge = getMoonAge(today);
+      const tomorrowAge = getMoonAge(tomorrow);
+
+      document.getElementById('tide-today-title').textContent =
+        '今日 ' + today.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+      document.getElementById('tide-tomorrow-title').textContent =
+        '明日 ' + tomorrow.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+
+      document.getElementById('moon-today').textContent =
+        `🌙 月齢 ${todayAge.toFixed(1)} / ${moonAgeToName(todayAge)}`;
+      document.getElementById('moon-tomorrow').textContent =
+        `🌙 月齢 ${tomorrowAge.toFixed(1)} / ${moonAgeToName(tomorrowAge)}`;
+    }
+
+    const tideFields = [
+      'high1-time', 'high1-level',
+      'low1-time', 'low1-level',
+      'high2-time', 'high2-level',
+      'low2-time', 'low2-level'
+    ];
+
+    function loadTideData() {
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      [
+        ['today', today],
+        ['tomorrow', tomorrow]
+      ].forEach(([prefix, dateObj]) => {
+        const key = 'tide-' + formatDateInputKey(dateObj);
+        const saved = JSON.parse(localStorage.getItem(key) || '{}');
+
+        tideFields.forEach(field => {
+          const el = document.getElementById(`${prefix}-${field}`);
+          if (el && saved[field]) {
+            el.value = saved[field];
+          }
+        });
+      });
+    }
+
+    function saveTideData() {
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      [
+        ['today', today],
+        ['tomorrow', tomorrow]
+      ].forEach(([prefix, dateObj]) => {
+        const key = 'tide-' + formatDateInputKey(dateObj);
+        const data = {};
+
+        tideFields.forEach(field => {
+          const el = document.getElementById(`${prefix}-${field}`);
+          if (el) {
+            data[field] = el.value;
+          }
+        });
+
+        localStorage.setItem(key, JSON.stringify(data));
+      });
+
+      const msg = document.getElementById('tide-save-message');
+      msg.textContent = '保存したにゃ';
+      setTimeout(() => { msg.textContent = ''; }, 1800);
+    }
+
+    function clearTideData() {
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      [today, tomorrow].forEach(dateObj => {
+        localStorage.removeItem('tide-' + formatDateInputKey(dateObj));
+      });
+
+      ['today', 'tomorrow'].forEach(prefix => {
+        tideFields.forEach(field => {
+          const el = document.getElementById(`${prefix}-${field}`);
+          if (el) {
+            el.value = '';
+          }
+        });
+      });
+
+      const msg = document.getElementById('tide-save-message');
+      msg.textContent = 'クリアしたにゃ';
+      setTimeout(() => { msg.textContent = ''; }, 1800);
+    }
+
+    updateMoonDisplay();
+
     async function fetchSurfData() {
       try {
         const marineUrl =
@@ -517,6 +745,7 @@
               <div class="weather">${weatherCodeToText(d.weather_code[day])}</div>
               <div class="sun">日の出 ${formatTime(d.sunrise[day])}</div>
               <div class="sun">日の入 ${formatTime(d.sunset[day])}</div>
+              <div class="sun">月齢 ${getMoonAge(base).toFixed(1)} / ${moonAgeToName(getMoonAge(base))}</div>
             </td>
             <td class="slot">${buildSlotHtml(h, w, targets[0])}</td>
             <td class="slot">${buildSlotHtml(h, w, targets[1])}</td>
