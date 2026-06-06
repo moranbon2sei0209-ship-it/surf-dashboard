@@ -1,265 +1,537 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>国府の浜 Surf Dashboard</title>
   <style>
+    :root {
+      --bg1: #083344;
+      --bg2: #0e7490;
+      --card: rgba(255, 255, 255, 0.16);
+      --card2: rgba(255, 255, 255, 0.23);
+      --line: rgba(255, 255, 255, 0.26);
+      --text: #ffffff;
+      --muted: rgba(255, 255, 255, 0.78);
+      --accent: #fde68a;
+      --good: #86efac;
+      --warn: #fcd34d;
+      --bad: #fca5a5;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
-      background: linear-gradient(180deg, #0b4f6c, #01baef);
-      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: radial-gradient(circle at top, #0ea5e9 0%, var(--bg2) 25%, var(--bg1) 100%);
+      color: var(--text);
       min-height: 100vh;
-      padding: 24px;
+      padding: 20px;
     }
 
     .container {
-      max-width: 720px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
     h1 {
-      font-size: 32px;
-      margin-bottom: 8px;
+      margin: 0 0 6px;
+      font-size: clamp(28px, 5vw, 44px);
+      letter-spacing: 0.02em;
     }
 
     .subtitle {
-      opacity: 0.85;
-      margin-bottom: 24px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .clock {
+      min-width: 160px;
+      text-align: right;
+      font-weight: 800;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.18);
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 16px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 18px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.20);
     }
 
     .card h2 {
-      margin-top: 0;
-      font-size: 22px;
+      margin: 0 0 12px;
+      font-size: 20px;
     }
 
     .data-row {
       display: flex;
       justify-content: space-between;
-      font-size: 20px;
+      gap: 12px;
       padding: 8px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
     }
 
-    .data-row:last-child {
-      border-bottom: none;
-    }
+    .data-row:last-child { border-bottom: none; }
+    .label { color: var(--muted); }
+    .value { text-align: right; font-weight: 700; }
 
     .recommend {
       font-size: 28px;
-      font-weight: bold;
-      margin-top: 8px;
+      font-weight: 900;
+      margin-bottom: 8px;
     }
 
     .stars {
+      color: var(--accent);
       font-size: 26px;
-      color: #ffe66d;
+      letter-spacing: 2px;
+      margin-top: 8px;
+    }
+
+    .table-card {
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .table-header {
+      padding: 18px 18px 10px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      padding: 0 0 10px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 880px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border-top: 1px solid var(--line);
+      border-right: 1px solid rgba(255,255,255,0.12);
+      padding: 10px 9px;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th:last-child, td:last-child { border-right: none; }
+
+    th {
+      background: rgba(255,255,255,0.12);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .day-cell {
+      min-width: 160px;
+      background: rgba(0,0,0,0.13);
+    }
+
+    .date-title {
+      font-weight: 900;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .weather {
+      color: var(--accent);
+      font-weight: 800;
+      margin: 4px 0 8px;
+    }
+
+    .sun {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .slot {
+      min-width: 170px;
+    }
+
+    .slot-title {
+      font-weight: 900;
+      color: var(--accent);
+      margin-bottom: 7px;
+    }
+
+    .mini-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      line-height: 1.55;
+    }
+
+    .mini-line span:first-child { color: var(--muted); }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .good { background: rgba(134,239,172,0.25); color: var(--good); }
+    .warn { background: rgba(252,211,77,0.25); color: var(--warn); }
+    .bad { background: rgba(252,165,165,0.25); color: var(--bad); }
+
+    .footer {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 14px 4px 0;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 820px) {
+      body { padding: 14px; }
+      .header { display: block; }
+      .clock { text-align: left; margin-top: 12px; }
+      .grid { grid-template-columns: 1fr; }
+      .card { border-radius: 18px; padding: 16px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🏄 国府の浜 Surf Dashboard</h1>
-    <div class="subtitle">龍ちゃん専用・朝イチ波チェックボード 🌊</div>
-<div class="card">
-  <h2>現在時刻</h2>
-  <div id="clock" style="font-size:28px;font-weight:bold;">
-    読み込み中...
+    <div class="header">
+      <div>
+        <h1>🏄 国府の浜 Surf Dashboard</h1>
+        <div class="subtitle">龍ちゃん専用・朝イチ波チェックボード 🌊</div>
+      </div>
+      <div id="clock" class="clock">読み込み中...</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>現在</h2>
+        <div class="data-row"><span class="label">データ時刻</span><span id="now-time" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">波高</span><span id="now-wave" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">周期</span><span id="now-period" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">波向き</span><span id="now-direction" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">風</span><span id="now-wind" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">天気</span><span id="now-weather" class="value">読み込み中...</span></div>
+      </div>
+
+      <div class="card">
+        <h2>明日の朝 6時</h2>
+        <div class="data-row"><span class="label">波高</span><span id="tomorrow-wave" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">周期</span><span id="tomorrow-period" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">波向き</span><span id="tomorrow-direction" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">風</span><span id="tomorrow-wind" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">天気</span><span id="tomorrow-weather" class="value">読み込み中...</span></div>
+      </div>
+
+      <div class="card">
+        <h2>おすすめ</h2>
+        <div id="recommend-board" class="recommend">読み込み中...</div>
+        <p id="recommend-comment">読み込み中...</p>
+        <div id="recommend-stars" class="stars">☆☆☆☆☆</div>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <div class="table-header">
+        <h2>7日間の波・風・天気</h2>
+        <div class="subtitle">各日 6時 / 12時 / 18時 / 24時 の傾向。横スクロールできるにゃ。</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>6時</th>
+              <th>12時</th>
+              <th>18時</th>
+              <th>24時</th>
+            </tr>
+          </thead>
+          <tbody id="forecast-table">
+            <tr><td colspan="5">読み込み中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">
+      データ元：Open-Meteo Marine / Forecast API。数値は予報モデルなので、最後はライブカメラと現地判断にゃ。<br>
+      24時はその日の終わり、つまり翌日0時のデータとして表示しているにゃ。
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <h2>現在</h2>
-　<div class="data-row"><span>データ時刻</span><span id="now-time"></span></div>
-  <div class="data-row"><span>波高</span><span id="now-wave">読み込み中...</span></div>
-  <div class="data-row"><span>周期</span><span id="now-period">読み込み中...</span></div>
-  <div class="data-row"><span>波向き</span><span id="now-direction">読み込み中...</span></div>
-　<div class="data-row"><span>風</span><span id="now-wind">読み込み中...</span></div>
-</div>
+  <script>
+    const LAT = 34.33;
+    const LON = 136.87;
 
-<div class="card">
-  <h2>明日の朝 6時</h2>
-  <div class="data-row"><span>波高</span><span id="tomorrow-wave">読み込み中...</span></div>
-  <div class="data-row"><span>周期</span><span id="tomorrow-period">読み込み中...</span></div>
-  <div class="data-row"><span>波向き</span><span id="tomorrow-direction">読み込み中...</span></div>
-　<div class="data-row"><span>風</span><span id="tomorrow-wind">読み込み中...</span></div>
-</div>
-    <div class="card">
-  <h2>おすすめ</h2>
-  <div id="recommend-board" class="recommend">読み込み中...</div>
-  <p id="recommend-comment">読み込み中...</p>
-  <div id="recommend-stars" class="stars">☆☆☆☆☆</div>
-</div>
-
-<script>
-function updateClock() {
-  const now = new Date();
-
-  const date = now.toLocaleDateString('ja-JP');
-  const time = now.toLocaleTimeString('ja-JP');
-
-  document.getElementById('clock').innerHTML =
-    date + "<br>" + time;
-}
-
-setInterval(updateClock, 1000);
-updateClock();
-
-async function fetchSurfData() {
-  const marineUrl =
-    "https://marine-api.open-meteo.com/v1/marine" +
-    "?latitude=34.33&longitude=136.87" +
-    "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction" +
-    "&timezone=Asia%2FTokyo" +
-    "&forecast_days=2";
-
-  const windUrl =
-    "https://api.open-meteo.com/v1/forecast" +
-    "?latitude=34.33&longitude=136.87" +
-    "&hourly=wind_speed_10m,wind_direction_10m" +
-    "&timezone=Asia%2FTokyo" +
-    "&forecast_days=2";
-
-  const marineRes = await fetch(marineUrl);
-  const marineData = await marineRes.json();
-
-  const windRes = await fetch(windUrl);
-  const windData = await windRes.json();
-
-  const h = marineData.hourly;
-  const w = windData.hourly;
-
-  const now = new Date();
-
-  let bestIndex = 0;
-  let bestDiff = Infinity;
-
-  h.time.forEach((t, i) => {
-    const diff = Math.abs(new Date(t) - now);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestIndex = i;
+    function updateClock() {
+      const now = new Date();
+      const date = now.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
+      const time = now.toLocaleTimeString('ja-JP');
+      document.getElementById('clock').innerHTML = date + '<br>' + time;
     }
-  });
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(6, 0, 0, 0);
+    setInterval(updateClock, 1000);
+    updateClock();
 
-  let morningIndex = 0;
-  let morningDiff = Infinity;
-
-  h.time.forEach((t, i) => {
-    const diff = Math.abs(new Date(t) - tomorrow);
-    if (diff < morningDiff) {
-      morningDiff = diff;
-      morningIndex = i;
+    function directionToText(deg) {
+      if (deg === null || deg === undefined || Number.isNaN(deg)) return '-';
+      const dirs = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
+      return dirs[Math.round(deg / 45) % 8];
     }
-  });
 
-　document.getElementById("now-time").textContent =
-  h.time[bestIndex];
+    function formatDateTimeLabel(isoText) {
+      const d = new Date(isoText);
+      return d.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
 
-  document.getElementById("now-wave").textContent =
-    h.wave_height[bestIndex] + "m";
-  document.getElementById("now-period").textContent =
-    h.wave_period[bestIndex] + "秒";
-  document.getElementById("now-direction").textContent =
-  h.wave_direction[bestIndex] + "° / " +
-  directionToText(h.wave_direction[bestIndex]);
+    function formatTime(isoText) {
+      const d = new Date(isoText);
+      return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    }
 
-  document.getElementById("tomorrow-wave").textContent =
-    h.wave_height[morningIndex] + "m";
-  document.getElementById("tomorrow-period").textContent =
-    h.wave_period[morningIndex] + "秒";
-  document.getElementById("tomorrow-direction").textContent =
-  h.wave_direction[morningIndex] + "° / " +
-  directionToText(h.wave_direction[morningIndex]);
+    function formatDateTitle(isoDate) {
+      const d = new Date(isoDate + 'T00:00:00');
+      return d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+    }
 
-  document.getElementById("now-wind").textContent =
-  w.wind_speed_10m[bestIndex] + "km/h / " +
-  w.wind_direction_10m[bestIndex] + "° / " +
-  directionToText(w.wind_direction_10m[bestIndex]);
+    function weatherCodeToText(code) {
+      const map = {
+        0: '☀️ 快晴',
+        1: '🌤️ 晴れ',
+        2: '⛅ 晴れ時々曇り',
+        3: '☁️ 曇り',
+        45: '🌫️ 霧',
+        48: '🌫️ 霧氷',
+        51: '🌦️ 小雨',
+        53: '🌦️ 雨',
+        55: '🌧️ 強めの雨',
+        56: '🌧️ 凍雨',
+        57: '🌧️ 強い凍雨',
+        61: '🌦️ 弱い雨',
+        63: '🌧️ 雨',
+        65: '🌧️ 強い雨',
+        66: '🌧️ 凍雨',
+        67: '🌧️ 強い凍雨',
+        71: '🌨️ 弱い雪',
+        73: '🌨️ 雪',
+        75: '❄️ 強い雪',
+        77: '🌨️ 雪粒',
+        80: '🌦️ にわか雨',
+        81: '🌧️ にわか雨',
+        82: '⛈️ 激しい雨',
+        85: '🌨️ にわか雪',
+        86: '❄️ 強いにわか雪',
+        95: '⛈️ 雷雨',
+        96: '⛈️ 雷雨・雹',
+        99: '⛈️ 強い雷雨・雹'
+      };
+      return map[code] || '？ 不明';
+    }
 
-  document.getElementById("tomorrow-wind").textContent =
-  w.wind_speed_10m[morningIndex] + "km/h / " +
-  w.wind_direction_10m[morningIndex] + "° / " +
-  directionToText(w.wind_direction_10m[morningIndex]);
+    function getRecommendation(wave, period, windKmh) {
+      let board = '🏄 UTOPIA';
+      let comment = '横見て立つべし。リラックスして走るにゃ。';
+      let stars = 3;
 
-const rec = getRecommendation(
-  h.wave_height[morningIndex],
-  h.wave_period[morningIndex],
-  w.wind_speed_10m[morningIndex]
-);
+      if (wave < 0.7) {
+        board = '🥚 Retro Egg';
+        comment = '小波メロー予報。たくさん乗って感覚練習にゃ。';
+        stars = 2;
+      }
 
-document.getElementById("recommend-board").textContent = rec.board;
-document.getElementById("recommend-comment").textContent = rec.comment;
-document.getElementById("recommend-stars").textContent = rec.stars;
+      if (wave >= 0.7 && wave < 1.3 && period >= 9 && windKmh < 20) {
+        board = '🏄 UTOPIA';
+        comment = 'ロングライド期待。横見てパワーゾーンを探すにゃ。';
+        stars = 5;
+      }
 
-}
+      if (wave >= 1.3 && windKmh < 20) {
+        board = '⚡ BV2 or UTOPIA';
+        comment = 'サイズあり。現地で掘れ具合とゲットを確認にゃ。';
+        stars = 4;
+      }
 
-function directionToText(deg) {
-  const dirs = [
-    "北",
-    "北東",
-    "東",
-    "南東",
-    "南",
-    "南西",
-    "西",
-    "北西"
-  ];
+      if (windKmh >= 20) {
+        comment = '風強め。面ザワ注意。無理せず現地判断にゃ。';
+        stars = Math.max(1, stars - 1);
+      }
 
-  return dirs[Math.round(deg / 45) % 8];
-}
+      return {
+        board,
+        comment,
+        stars: '★'.repeat(stars) + '☆'.repeat(5 - stars)
+      };
+    }
 
-function getRecommendation(wave, period, windKmh) {
-  let board = "🏄 UTOPIA";
-  let comment = "横見て立つべし。リラックスして走るにゃ。";
-  let stars = 3;
+    function findClosestIndex(times, targetDate) {
+      let bestIndex = 0;
+      let bestDiff = Infinity;
+      times.forEach((t, i) => {
+        const diff = Math.abs(new Date(t) - targetDate);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestIndex = i;
+        }
+      });
+      return bestIndex;
+    }
 
-  if (wave < 0.7) {
-    board = "🥚 Retro Egg";
-    comment = "小波メロー予報。たくさん乗って感覚練習にゃ。";
-    stars = 2;
-  }
+    function buildSlotHtml(h, w, index) {
+      const wave = h.wave_height[index];
+      const period = h.wave_period[index];
+      const waveDir = h.wave_direction[index];
+      const windSpeed = w.wind_speed_10m[index];
+      const windDir = w.wind_direction_10m[index];
+      const weather = weatherCodeToText(w.weather_code[index]);
 
-  if (wave >= 0.7 && wave < 1.3 && period >= 9 && windKmh < 20) {
-    board = "🏄 UTOPIA";
-    comment = "ロングライド期待。横見てパワーゾーンを探すにゃ。";
-    stars = 5;
-  }
+      let badgeClass = 'warn';
+      let badgeText = '要判断';
+      if (windSpeed < 15 && period >= 9 && wave >= 0.7) {
+        badgeClass = 'good';
+        badgeText = '良さげ';
+      }
+      if (windSpeed >= 22) {
+        badgeClass = 'bad';
+        badgeText = '風注意';
+      }
 
-  if (wave >= 1.3 && windKmh < 20) {
-    board = "⚡ BV2 or UTOPIA";
-    comment = "サイズあり。現地で掘れ具合とゲットを確認にゃ。";
-    stars = 4;
-  }
+      return `
+        <div class="slot-title">${formatTime(h.time[index])}</div>
+        <div class="mini-line"><span>天気</span><strong>${weather}</strong></div>
+        <div class="mini-line"><span>波高</span><strong>${wave}m</strong></div>
+        <div class="mini-line"><span>周期</span><strong>${period}秒</strong></div>
+        <div class="mini-line"><span>波向</span><strong>${waveDir}° / ${directionToText(waveDir)}</strong></div>
+        <div class="mini-line"><span>風</span><strong>${windSpeed}km/h</strong></div>
+        <div class="mini-line"><span>風向</span><strong>${windDir}° / ${directionToText(windDir)}</strong></div>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+      `;
+    }
 
-  if (windKmh >= 20) {
-    comment = "風強め。面ザワ注意。無理せず現地判断にゃ。";
-    stars = Math.max(1, stars - 1);
-  }
+    async function fetchSurfData() {
+      try {
+        const marineUrl =
+          'https://marine-api.open-meteo.com/v1/marine' +
+          `?latitude=${LAT}&longitude=${LON}` +
+          '&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction' +
+          '&timezone=Asia%2FTokyo' +
+          '&forecast_days=7';
 
-  return {
-    board,
-    comment,
-    stars: "★".repeat(stars) + "☆".repeat(5 - stars)
-  };
-}
+        const weatherUrl =
+          'https://api.open-meteo.com/v1/forecast' +
+          `?latitude=${LAT}&longitude=${LON}` +
+          '&hourly=wind_speed_10m,wind_direction_10m,weather_code' +
+          '&daily=weather_code,sunrise,sunset' +
+          '&timezone=Asia%2FTokyo' +
+          '&forecast_days=7';
 
-fetchSurfData();
+        const [marineRes, weatherRes] = await Promise.all([
+          fetch(marineUrl),
+          fetch(weatherUrl)
+        ]);
 
-</script>
+        const marineData = await marineRes.json();
+        const weatherData = await weatherRes.json();
+
+        const h = marineData.hourly;
+        const w = weatherData.hourly;
+        const d = weatherData.daily;
+
+        const now = new Date();
+        const nowIndex = findClosestIndex(h.time, now);
+
+        const tomorrow6 = new Date();
+        tomorrow6.setDate(tomorrow6.getDate() + 1);
+        tomorrow6.setHours(6, 0, 0, 0);
+        const tomorrowIndex = findClosestIndex(h.time, tomorrow6);
+
+        document.getElementById('now-time').textContent = formatDateTimeLabel(h.time[nowIndex]);
+        document.getElementById('now-wave').textContent = h.wave_height[nowIndex] + 'm';
+        document.getElementById('now-period').textContent = h.wave_period[nowIndex] + '秒';
+        document.getElementById('now-direction').textContent = h.wave_direction[nowIndex] + '° / ' + directionToText(h.wave_direction[nowIndex]);
+        document.getElementById('now-wind').textContent = w.wind_speed_10m[nowIndex] + 'km/h / ' + w.wind_direction_10m[nowIndex] + '° / ' + directionToText(w.wind_direction_10m[nowIndex]);
+        document.getElementById('now-weather').textContent = weatherCodeToText(w.weather_code[nowIndex]);
+
+        document.getElementById('tomorrow-wave').textContent = h.wave_height[tomorrowIndex] + 'm';
+        document.getElementById('tomorrow-period').textContent = h.wave_period[tomorrowIndex] + '秒';
+        document.getElementById('tomorrow-direction').textContent = h.wave_direction[tomorrowIndex] + '° / ' + directionToText(h.wave_direction[tomorrowIndex]);
+        document.getElementById('tomorrow-wind').textContent = w.wind_speed_10m[tomorrowIndex] + 'km/h / ' + w.wind_direction_10m[tomorrowIndex] + '° / ' + directionToText(w.wind_direction_10m[tomorrowIndex]);
+        document.getElementById('tomorrow-weather').textContent = weatherCodeToText(w.weather_code[tomorrowIndex]);
+
+        const rec = getRecommendation(
+          h.wave_height[tomorrowIndex],
+          h.wave_period[tomorrowIndex],
+          w.wind_speed_10m[tomorrowIndex]
+        );
+        document.getElementById('recommend-board').textContent = rec.board;
+        document.getElementById('recommend-comment').textContent = rec.comment;
+        document.getElementById('recommend-stars').textContent = rec.stars;
+
+        const tbody = document.getElementById('forecast-table');
+        tbody.innerHTML = '';
+
+        for (let day = 0; day < 7; day++) {
+          const dateText = d.time[day];
+          const base = new Date(dateText + 'T00:00:00');
+
+          const targets = [6, 12, 18, 24].map(hour => {
+            const t = new Date(base);
+            if (hour === 24) {
+              t.setDate(t.getDate() + 1);
+              t.setHours(0, 0, 0, 0);
+            } else {
+              t.setHours(hour, 0, 0, 0);
+            }
+            return findClosestIndex(h.time, t);
+          });
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="day-cell">
+              <div class="date-title">${formatDateTitle(dateText)}</div>
+              <div class="weather">${weatherCodeToText(d.weather_code[day])}</div>
+              <div class="sun">日の出 ${formatTime(d.sunrise[day])}</div>
+              <div class="sun">日の入 ${formatTime(d.sunset[day])}</div>
+            </td>
+            <td class="slot">${buildSlotHtml(h, w, targets[0])}</td>
+            <td class="slot">${buildSlotHtml(h, w, targets[1])}</td>
+            <td class="slot">${buildSlotHtml(h, w, targets[2])}</td>
+            <td class="slot">${buildSlotHtml(h, w, targets[3])}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById('forecast-table').innerHTML = '<tr><td colspan="5">データ取得に失敗したにゃ。時間をおいて再読み込みしてみてにゃ。</td></tr>';
+      }
+    }
+
+    fetchSurfData();
+  </script>
 </body>
 </html>
