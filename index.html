@@ -296,6 +296,7 @@
         <div class="data-row"><span class="label">データ時刻</span><span id="now-time" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">波高</span><span id="now-wave" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">周期</span><span id="now-period" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">波パワー</span><span id="now-power" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">波向き</span><span id="now-direction" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">風</span><span id="now-wind" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">天気</span><span id="now-weather" class="value">読み込み中...</span></div>
@@ -305,6 +306,7 @@
         <h2>明日の朝 6時</h2>
         <div class="data-row"><span class="label">波高</span><span id="tomorrow-wave" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">周期</span><span id="tomorrow-period" class="value">読み込み中...</span></div>
+        <div class="data-row"><span class="label">波パワー</span><span id="tomorrow-power" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">波向き</span><span id="tomorrow-direction" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">風</span><span id="tomorrow-wind" class="value">読み込み中...</span></div>
         <div class="data-row"><span class="label">天気</span><span id="tomorrow-weather" class="value">読み込み中...</span></div>
@@ -381,7 +383,7 @@
     </div>
 
     <div class="footer">
-      データ元：Open-Meteo Marine / Forecast API。数値は予報モデルなので、最後はライブカメラと現地判断にゃ。<br>
+      データ元：Open-Meteo Marine / Forecast API。波パワーは波高と周期から計算した目安値。最後はライブカメラと現地判断にゃ。<br>
       潮汐は外部リンクで確認。月齢はJavaScriptによる概算にゃ。<br>
       24時はその日の終わり、つまり翌日0時のデータとして表示しているにゃ。
     </div>
@@ -405,6 +407,27 @@
       if (deg === null || deg === undefined || Number.isNaN(deg)) return '-';
       const dirs = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
       return dirs[Math.round(deg / 45) % 8];
+    }
+
+    function formatWindMs(ms) {
+      if (ms === null || ms === undefined || Number.isNaN(ms)) return '-';
+      return Number(ms).toFixed(1) + 'm/s';
+    }
+
+    function calcWavePower(waveHeight, period) {
+      if (waveHeight === null || waveHeight === undefined || period === null || period === undefined) return null;
+      // 目安値：深海波の波エネルギー流束に近い式。Open-Meteoの周期を使う簡易計算。
+      return 0.49 * waveHeight * waveHeight * period;
+    }
+
+    function formatWavePower(waveHeight, period) {
+      const power = calcWavePower(waveHeight, period);
+      if (power === null || Number.isNaN(power)) return '-';
+      let label = '弱め';
+      if (power >= 3) label = '普通';
+      if (power >= 6) label = '強め';
+      if (power >= 10) label = 'かなり強め';
+      return power.toFixed(1) + ' kW/m 目安 / ' + label;
     }
 
     function formatDateTimeLabel(isoText) {
@@ -456,7 +479,7 @@
       return map[code] || '？ 不明';
     }
 
-    function getRecommendation(wave, period, windKmh) {
+    function getRecommendation(wave, period, windMs) {
       let board = '🏄 UTOPIA';
       let comment = '横見て立つべし。リラックスして走るにゃ。';
       let stars = 3;
@@ -467,19 +490,19 @@
         stars = 2;
       }
 
-      if (wave >= 0.7 && wave < 1.3 && period >= 9 && windKmh < 20) {
+      if (wave >= 0.7 && wave < 1.3 && period >= 9 && windMs < 5.5) {
         board = '🏄 UTOPIA';
         comment = 'ロングライド期待。横見てパワーゾーンを探すにゃ。';
         stars = 5;
       }
 
-      if (wave >= 1.3 && windKmh < 20) {
+      if (wave >= 1.3 && windMs < 5.5) {
         board = '⚡ BV2 or UTOPIA';
         comment = 'サイズあり。現地で掘れ具合とゲットを確認にゃ。';
         stars = 4;
       }
 
-      if (windKmh >= 20) {
+      if (windMs >= 5.5) {
         comment = '風強め。面ザワ注意。無理せず現地判断にゃ。';
         stars = Math.max(1, stars - 1);
       }
@@ -514,11 +537,11 @@
 
       let badgeClass = 'warn';
       let badgeText = '要判断';
-      if (windSpeed < 15 && period >= 9 && wave >= 0.7) {
+      if (windSpeed < 4.2 && period >= 9 && wave >= 0.7) {
         badgeClass = 'good';
         badgeText = '良さげ';
       }
-      if (windSpeed >= 22) {
+      if (windSpeed >= 6.1) {
         badgeClass = 'bad';
         badgeText = '風注意';
       }
@@ -528,8 +551,9 @@
         <div class="mini-line"><span>天気</span><strong>${weather}</strong></div>
         <div class="mini-line"><span>波高</span><strong>${wave}m</strong></div>
         <div class="mini-line"><span>周期</span><strong>${period}秒</strong></div>
+        <div class="mini-line"><span>パワー</span><strong>${formatWavePower(wave, period)}</strong></div>
         <div class="mini-line"><span>波向</span><strong>${waveDir}° / ${directionToText(waveDir)}</strong></div>
-        <div class="mini-line"><span>風</span><strong>${windSpeed}km/h</strong></div>
+        <div class="mini-line"><span>風</span><strong>${formatWindMs(windSpeed)}</strong></div>
         <div class="mini-line"><span>風向</span><strong>${windDir}° / ${directionToText(windDir)}</strong></div>
         <span class="badge ${badgeClass}">${badgeText}</span>
       `;
@@ -675,6 +699,7 @@
           `?latitude=${LAT}&longitude=${LON}` +
           '&hourly=wind_speed_10m,wind_direction_10m,weather_code' +
           '&daily=weather_code,sunrise,sunset' +
+          '&wind_speed_unit=ms' +
           '&timezone=Asia%2FTokyo' +
           '&forecast_days=7';
 
@@ -701,14 +726,16 @@
         document.getElementById('now-time').textContent = formatDateTimeLabel(h.time[nowIndex]);
         document.getElementById('now-wave').textContent = h.wave_height[nowIndex] + 'm';
         document.getElementById('now-period').textContent = h.wave_period[nowIndex] + '秒';
+        document.getElementById('now-power').textContent = formatWavePower(h.wave_height[nowIndex], h.wave_period[nowIndex]);
         document.getElementById('now-direction').textContent = h.wave_direction[nowIndex] + '° / ' + directionToText(h.wave_direction[nowIndex]);
-        document.getElementById('now-wind').textContent = w.wind_speed_10m[nowIndex] + 'km/h / ' + w.wind_direction_10m[nowIndex] + '° / ' + directionToText(w.wind_direction_10m[nowIndex]);
+        document.getElementById('now-wind').textContent = formatWindMs(w.wind_speed_10m[nowIndex]) + ' / ' + w.wind_direction_10m[nowIndex] + '° / ' + directionToText(w.wind_direction_10m[nowIndex]);
         document.getElementById('now-weather').textContent = weatherCodeToText(w.weather_code[nowIndex]);
 
         document.getElementById('tomorrow-wave').textContent = h.wave_height[tomorrowIndex] + 'm';
         document.getElementById('tomorrow-period').textContent = h.wave_period[tomorrowIndex] + '秒';
+        document.getElementById('tomorrow-power').textContent = formatWavePower(h.wave_height[tomorrowIndex], h.wave_period[tomorrowIndex]);
         document.getElementById('tomorrow-direction').textContent = h.wave_direction[tomorrowIndex] + '° / ' + directionToText(h.wave_direction[tomorrowIndex]);
-        document.getElementById('tomorrow-wind').textContent = w.wind_speed_10m[tomorrowIndex] + 'km/h / ' + w.wind_direction_10m[tomorrowIndex] + '° / ' + directionToText(w.wind_direction_10m[tomorrowIndex]);
+        document.getElementById('tomorrow-wind').textContent = formatWindMs(w.wind_speed_10m[tomorrowIndex]) + ' / ' + w.wind_direction_10m[tomorrowIndex] + '° / ' + directionToText(w.wind_direction_10m[tomorrowIndex]);
         document.getElementById('tomorrow-weather').textContent = weatherCodeToText(w.weather_code[tomorrowIndex]);
 
         const rec = getRecommendation(
